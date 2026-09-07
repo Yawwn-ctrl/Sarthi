@@ -1,0 +1,8 @@
+{
+  "name": "Pothole detection Addon",
+  "description": "Multi-planner autonomous vehicle framework integrating Artificial Potential Fields (APF), Frenet Frame Trajectory Generation, and Gap Acceptance with supervisory switching for chaotic unstructured Indian road contexts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
