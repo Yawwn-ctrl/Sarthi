@@ -155,15 +155,35 @@ export default function App() {
     let animationFrameId: number;
     let lastTimestamp = performance.now();
 
+    const FIXED_STEP = 0.05;   // s, physics timestep
+    const MAX_STEPS_PER_FRAME = 6; // spiral-of-death guard on slow machines
+    let accumulator = 0;
+
     const loop = (timestamp: number) => {
-      const dt = Math.min(0.08, (timestamp - lastTimestamp) / 1000);
+      // Wall-clock elapsed time, clamped so a stalled tab doesn't fast-forward.
+      const elapsed = Math.min(0.25, (timestamp - lastTimestamp) / 1000);
       lastTimestamp = timestamp;
 
       if (isRunning && !engineRef.current.isFinished) {
-        engineRef.current.update(0.05); // Fixed physics step dt
-        setTick(t => t + 1);
+        // Accumulate real time and consume it in fixed steps, so 1x means 1x
+        // regardless of framerate. Previously one 0.05s step ran per rendered
+        // frame, which made simulation speed a function of rendering load.
+        accumulator += elapsed;
+        let steps = 0;
+        while (accumulator >= FIXED_STEP && steps < MAX_STEPS_PER_FRAME) {
+          if (engineRef.current.isFinished) break;
+          engineRef.current.update(FIXED_STEP);
+          accumulator -= FIXED_STEP;
+          steps++;
+        }
+        if (accumulator > FIXED_STEP * MAX_STEPS_PER_FRAME) {
+          accumulator = 0; // fell too far behind; drop the backlog
+        }
+        if (steps > 0) setTick(t => t + 1);
       } else if (engineRef.current.isFinished && isRunning) {
         setIsRunning(false);
+      } else {
+        accumulator = 0;
       }
 
       animationFrameId = requestAnimationFrame(loop);
